@@ -70,6 +70,6 @@ def get_financial_summary():
 
 if __name__== "__main__":
     init_db()
-    print("Ganesh mandal Data base Initialized successfully ")
+    print("Ganesh mandal Data base Initialized successfully")
 
 
