@@ -19,7 +19,7 @@ col3.metric(label="शिल्लक रक्कम (Remaining Balance)", valu
 st.write("----")
 
 #navigation tables 
-tab1, tab2, tab3=st.tabs(["वर्गणी पावती (Collect Vargani)", "📋 सर्व नोंदी (All Records)", "💸 खर्च नोंद (Expenses)"])
+tab1, tab2, tab3=st.tabs(["वर्गणी पावती (Collect Vargani)", "सर्व नोंदी (All Records)", "खर्च नोंद (Expenses)"])
 
 with tab1:
     st.subheader("नवीन वर्गणी पावती फाडा (New Donation Receipt)")
@@ -46,7 +46,7 @@ with tab1:
 
 
 with tab2:
-    st.subheader("📋 जमा वर्गणी यादी (All Donation Records)")
+    st.subheader("जमा वर्गणी यादी (All Donation Records)")
     
     records = db.get_all_donations()
     
@@ -57,12 +57,31 @@ with tab2:
         df.insert(0, "अनुक्रमांक (Sr. No.)", range(1, len(df) + 1))
         # Display table
         st.dataframe(df, use_container_width=True, hide_index=True)
+
+        with st.expander("चुकीची वर्गणी नोंद हटवा (Delete Donor Entry)"):
+                donor_options={
+                    f"पावती #{row[0]} - {row[1]} (₹{row[3]:,.2f})": row[0]
+                    for row in records
+                }
+                selected_lable=st.selectbox(
+                    "हटवण्यासाठी देणगीदाराची पावती निवडा:",
+                    options=list(donor_options.keys())
+                )
+                if st.button("वर्गणी नोंद कायमची हटवा (Delete Record)", type="primary"):
+                    selected_id=donor_options[selected_lable]
+                    db.delete_donor_record(selected_id)
+                    st.success(f"पावती क्र. #{selected_id} यशस्वीरीत्या हटवली गेली!")
+                    st.rerun()
     else:
-        st.info("अजून कोणतीही वर्गणी जमा झालेली नाही (No donations recorded yet).")
+            st.info("अजून कोणतीही वर्गणी जमा झालेली नाही (No donations recorded yet).")
+
+
+        
+
 
 
 with tab3:
-    st.subheader("💸 मंडळाचा खर्च नोंदवा (Record Mandal Expense)")
+    st.subheader("मंडळाचा खर्च नोंदवा (Record Mandal Expense)")
     
     with st.form("expense_form", clear_on_submit=True):
         category = st.selectbox(
@@ -85,13 +104,13 @@ with tab3:
         if exp_submitted:
             if expense_amount > 0:
                 db.add_expense(category, description, expense_amount)
-                st.success(f"✅ खर्च यशस्वीरीत्या नोंदवला: ₹{expense_amount:,.2f} ({category})")
+                st.success(f"खर्च यशस्वीरीत्या नोंदवला: ₹{expense_amount:,.2f} ({category})")
                 st.rerun()
             else:
-                st.error("⚠️ कृपया ₹० पेक्षा जास्त रक्कम टाका (Please enter an amount greater than 0)!")
+                st.error(" कृपया ₹० पेक्षा जास्त रक्कम टाका (Please enter an amount greater than 0)!")
 
     st.write("----")
-    st.subheader("📋 सर्व खर्चांची यादी (All Expense Records)")
+    st.subheader(" सर्व खर्चांची यादी (All Expense Records)")
 
     expenses_data = db.get_all_expenses()
     if expenses_data:
@@ -99,13 +118,14 @@ with tab3:
         exp_df = pd.DataFrame(expenses_data, columns=exp_columns)
         exp_df.insert(0, "अनुक्रमांक (Sr. No.)", range(1, len(exp_df) + 1))
         st.dataframe(exp_df, use_container_width=True, hide_index=True)
+
+        with st.expander("चुकीची नोंद हटवा (Delete Wrong Expense Entry)"):
+            del_id = st.number_input("हटवण्यासाठी खर्च क्र. (ID) टाका", min_value=1, step=1)
+            if st.button("नोंद हटवा (Delete)"):
+                db.delete_expense(del_id)
+                st.warning(f"खर्च क्र. #{del_id} हटवला गेला!")
+                st.rerun()
     else:
         st.info("अजून कोणताही खर्च नोंदवलेला नाही (No expenses recorded yet).")
 
 
-with st.expander("🗑️ चुकीची नोंद हटवा (Delete Wrong Expense Entry)"):
-    del_id = st.number_input("हटवण्यासाठी खर्च क्र. (ID) टाका", min_value=1, step=1)
-    if st.button("नोंद हटवा (Delete)"):
-        db.delete_expense(del_id)
-        st.warning(f"खर्च क्र. #{del_id} हटवला गेला!")
-        st.rerun()

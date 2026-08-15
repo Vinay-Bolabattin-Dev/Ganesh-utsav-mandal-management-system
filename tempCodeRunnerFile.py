@@ -54,6 +54,14 @@ def get_all_donations():
         """)
         return cursor.fetchall()
 
+def delete_donor_record(donation_id):
+    ## delete Donation by ID
+    with sqlite3.connect(DB_NAME)as conn:
+        cursor=conn.cursor()
+        cursor.execute("DELETE FROM donations WHERE id=?", (donation_id,))
+        conn.commit()
+        return True
+
 def add_expense(category, description, amount):
     """Inserts a new Mandal expense record."""
     with sqlite3.connect(DB_NAME) as conn:
@@ -89,6 +97,14 @@ def get_all_expenses():
         ORDER BY id DESC
         """)
         return cursor.fetchall()
+
+def delete_expense(expense_id):
+    """Deletes an expense record by its ID."""
+    with sqlite3.connect(DB_NAME) as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM expenses WHERE id = ?", (expense_id,))
+        conn.commit()
+        return True
 
 if __name__ == "__main__":
     init_db()
