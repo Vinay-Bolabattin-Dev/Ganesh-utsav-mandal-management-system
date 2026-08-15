@@ -1,6 +1,32 @@
 import streamlit as st
 import pandas as pd
 import database as db
+import urllib.parse
+
+def create_whatsapp_url(phone, name, receipt_no, amount, mode):
+    ## Generating whatsapp click-to-chat URL with pre-filled receipt msg
+    clean_phone = "".join(filter(str.isdigit, str(phone)))
+    if len(clean_phone) == 10:
+        clean_phone = "91" + clean_phone 
+
+    lines = [
+        "🚩 *श्री स्वामी समर्थ मित्र मंडळ* 🚩",
+        "*सार्वजनिक गणेशोत्सव २०२६*",
+        "",
+        f"📄 *पावती क्र.(Receipt no)* : #{receipt_no}",
+        f"👤 *देणगीदार (Donor)* : {name}",
+        f"💰 *वर्गणी रक्कम (Amount)* : *₹{amount:,.2f}*",
+        f"💳 *पद्धत (Payment mode)* : {mode}",
+        "",
+        "🙏 मंडळाच्या वतीने आपले मनापासून आभार!",
+        "🌺 *गणपती बाप्पा मोरया, मंगलमूर्ती मोरया!* 🌺"
+    ]
+    message_text = '\n'.join(lines)
+    encoded_text = urllib.parse.quote(message_text.encode('utf-8'))
+    return f"https://api.whatsapp.com/send?phone={clean_phone}&text={encoded_text}"
+
+
+
 
 
 
@@ -21,7 +47,7 @@ st.write("----")
 #navigation tables 
 tab1, tab2, tab3=st.tabs(["वर्गणी पावती (Collect Vargani)", "सर्व नोंदी (All Records)", "खर्च नोंद (Expenses)"])
 
-with tab1:
+with tab1: ## receipt table 
     st.subheader("नवीन वर्गणी पावती फाडा (New Donation Receipt)")
 
     with st.form("donation_form" ,clear_on_submit=True):
@@ -41,11 +67,38 @@ with tab1:
                 st.balloons()
                 st.success(f" वर्गणी यशस्वीरीत्या जमा झाली! पावती क्रमांक: #{receipt_id}")
                 st.info(f"देणगीदार: {donor_name} | रक्कम: ₹{amount:,.2f} | पद्धत: {payment_mode}")
+
+                if phone_number.strip():
+                    wa_url = create_whatsapp_url(phone_number, donor_name, receipt_id, amount, payment_mode)
+                    
+                    # Clean direct HTML button that prevents browser double-encoding
+                    st.markdown(
+                        f"""
+                        <a href="{wa_url}" target="_blank" style="text-decoration:none;">
+                            <div style="
+                                background-color: #25D366;
+                                color: white;
+                                padding: 10px 20px;
+                                text-align: center;
+                                border-radius: 8px;
+                                font-weight: bold;
+                                font-size: 16px;
+                                margin-top: 10px;
+                                display: inline-block;
+                                width: 100%;
+                            ">
+                                📲 WhatsApp वर पावती पाठवा (Send Receipt on WhatsApp)
+                            </div>
+                        </a>
+                        """,
+                        unsafe_allow_html=True
+                    )
+
             else:
                 st.error("कृपया देणगीदाराचे नाव टाका (Please enter donor name)!")
 
 
-with tab2:
+with tab2: ## donors list table 
     st.subheader("जमा वर्गणी यादी (All Donation Records)")
     
     records = db.get_all_donations()
@@ -80,7 +133,7 @@ with tab2:
 
 
 
-with tab3:
+with tab3: ## expenses list table   
     st.subheader("मंडळाचा खर्च नोंदवा (Record Mandal Expense)")
     
     with st.form("expense_form", clear_on_submit=True):
