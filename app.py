@@ -2,7 +2,10 @@ import streamlit as st
 import pandas as pd
 import database as db
 import urllib.parse
+from datetime import date
 
+
+## Whats app url helper  (Confrimed Donations)
 def create_whatsapp_url(phone, name, receipt_no, amount, mode):
     ## Generating whatsapp click-to-chat URL with pre-filled receipt msg
     clean_phone = "".join(filter(str.isdigit, str(phone)))
@@ -25,10 +28,37 @@ def create_whatsapp_url(phone, name, receipt_no, amount, mode):
     encoded_text = urllib.parse.quote(message_text.encode('utf-8'))
     return f"https://api.whatsapp.com/send?phone={clean_phone}&text={encoded_text}"
 
+## Whatsapp url helper for (Pending Donations)  
 
+def create_pending_whatsapp_url(phone,name,amount,promised_date,notes):
+    ##Generates pending donations pledge link 
+    clean_phone= "".join(filter(str.isdigit ,str(phone)))
+    if len(clean_phone)==10:
+        clean_phone="91"+ clean_phone
 
+    lines = [
+        "🚩 *श्री स्वामी समर्थ मित्र मंडळ* 🚩",
+        "*सार्वजनिक गणेशोत्सव २०२६*",
+        "",
+        "📋 *अंदाजित / थकीत वर्गणी नोंद (Pending Donations)*",
+        f"👤 *नाव / संस्था(Donor name)* : {name}",
+        f"💰 *नोंदवलेली रक्कम(Amount)* : *₹{amount:,.2f}*",
+        f"🗓️ *अपेक्षित तारीख(Promised date)* : {promised_date}",
+    ]
 
+    if notes.strip():
+        lines.append(f"📝 *तपशील* : {notes}")
+        
+    lines.extend([
+        "",
+        "🙏 आपल्या सहकार्याबद्दल मनःपूर्वक धन्यवाद!",
+        "🌺 *गणपती बाप्पा मोरया, मंगलमूर्ती मोरया!* 🌺"
+    ])
+    message_text='\n'.join(lines)
+    encoded_text=urllib.parse.quote(message_text.encode('utf-8'))
+    return f"http://api.whatsapp.com/send?phone={clean_phone}&text={encoded_text}"
 
+##Page configuration & financial metrics 
 
 st.set_page_config(page_title= "श्री स्वामी समर्थ मित्र मंडळ", layout='wide')
 
@@ -36,22 +66,30 @@ st.title("श्री स्वामी समर्थ मित्र मं
 st.write("सार्वजनिक गणेश उत्सव मंडळ")
 
 total_coll , total_exp , balance = db.get_financial_summary() ## calling function from database.py
+total_pending=db.get_total_pending_amount()
 
-col1,col2,col3=st.columns(3)
+col1,col2,col3,col4=st.columns(4)
 col1.metric(label="एकूण वर्गणी (Collection)", value =f"₹{total_coll:,.2f}")
 col2.metric(label="एकूण खर्च (Expenses)", value=f"₹{total_exp:,.2f}")
 col3.metric(label="शिल्लक रक्कम (Remaining Balance)", value=f"₹{balance:,.2f}")
-
+col4.metric(label="येणे बाकी (Total Pending)", value=f"₹{total_pending:,.2f}")
 st.write("----")
 
 #navigation tables 
-tab1, tab2, tab3=st.tabs(["वर्गणी पावती (Collect Vargani)", "सर्व नोंदी (All Records)", "खर्च नोंद (Expenses)"])
+tab1, tab2, tab3, tab4 = st.tabs([
+    "वर्गणी पावती (Collect Vargani)",
+    "सर्व नोंदी (All Records)",
+    "खर्च नोंद (Expenses)",
+    "थकीत / अंदाजित वर्गणी (Pending Donations)"
+])
+
+## tab1 : New Donations receipet
 
 with tab1: ## receipt table 
     st.subheader("नवीन वर्गणी पावती फाडा (New Donation Receipt)")
 
     with st.form("donation_form" ,clear_on_submit=True):
-        donor_name=st.text_input("(भक्ताचे / देणगीदाराचे नाव (Donor Name) *")
+        donor_name=st.text_input("भक्ताचे / देणगीदाराचे नाव (Donor Name) *")
         phone_number=st.text_input("मोबाईल नंबर (Phone Number)")
         amount=st.number_input("वर्गणी रक्कम (Amount in ₹) *", min_value=0.0,step=50.0)
         payment_mode=st.selectbox("पैसे देण्याची पद्धत (Payment Mode)",['Cash', 'UPI', 'Bank Transfer'])
@@ -87,7 +125,7 @@ with tab1: ## receipt table
                                 display: inline-block;
                                 width: 100%;
                             ">
-                                📲 WhatsApp वर पावती पाठवा (Send Receipt on WhatsApp)
+                                WhatsApp वर पावती पाठवा (Send Receipt on WhatsApp)
                             </div>
                         </a>
                         """,
@@ -97,7 +135,7 @@ with tab1: ## receipt table
             else:
                 st.error("कृपया देणगीदाराचे नाव टाका (Please enter donor name)!")
 
-
+## tab2 : Confrimed Donor Records 
 with tab2: ## donors list table 
     st.subheader("जमा वर्गणी यादी (All Donation Records)")
     
@@ -132,7 +170,7 @@ with tab2: ## donors list table
         
 
 
-
+## tab3: Expenses Management 
 with tab3: ## expenses list table   
     st.subheader("मंडळाचा खर्च नोंदवा (Record Mandal Expense)")
     
@@ -177,8 +215,99 @@ with tab3: ## expenses list table
             if st.button("नोंद हटवा (Delete)"):
                 db.delete_expense(del_id)
                 st.warning(f"खर्च क्र. #{del_id} हटवला गेला!")
-                st.rerun()
+            st.rerun()
     else:
         st.info("अजून कोणताही खर्च नोंदवलेला नाही (No expenses recorded yet).")
 
+## tab4 : pending / pledged Donations 
+
+with tab4 :
+    st.subheader("नवीन थकीत / अंदाजित वर्गणी नोंदवा (Record Pledged Donation)")
+
+    with st.form("pending_form",clear_on_submit=True):
+        p_name=st.text_input("नाव / दुकान / कारखाना / संस्था (Name / Entity) *")
+        p_phone=st.text_input("मोबाईल नंबर (Phone Number)")
+        p_amount=st.number_input("अंदाजित / ठरलेली रक्कम (Pledged Amount in ₹) *", min_value=1.0, value=500.0, step=100.0)
+        p_date=st.date_input("अपेक्षित देय तारीख (Expected Date)", value=date.today())
+        p_notes=st.text_input("तपशील / टीप (Notes e.g. पगार झाल्यावर देणार / चेक देणार)")
+
+        p_submitted=st.form_submit_button("थकीत नोंद जतन करा (Save Pledge)")
+        if p_submitted:
+            if p_name.strip():
+                p_id=db.add_pending_donation(p_name,p_phone,p_amount, str(p_date),p_notes)
+                st.success(f"थकीत नोंद यशस्वीरीत्या जतन झाली! नोंद क्र. #{p_id}")
+                st.info(f"{p_name} | अपेक्षित रक्कम: ₹{p_amount:,.2f} | तारीख: {p_date}")
+
+                if p_phone.strip():
+                    p_wa_url = create_pending_whatsapp_url(p_phone, p_name, p_amount, str(p_date), p_notes)
+                    st.markdown(
+                        f"""
+                        <a href="{p_wa_url}" target="_blank" style="text-decoration:none;">
+                            <div style="background-color: #25D366; color: white; padding: 12px 20px; text-align: center; border-radius: 8px; font-weight: bold; font-size: 16px; margin-top: 10px; display: inline-block; width: 100%;">
+                                 WhatsApp वर नोंद पावती / स्मरणपत्र पाठवा (Send Pledge Note)
+                            </div>
+                        </a>
+                        """,
+                        unsafe_allow_html=True
+                    )
+            else:
+                st.error("कृपया नाव प्रविष्ट करा (Please enter name)!")
+
+    st.write("-------")    
+    st.subheader("सर्व येणे बाकी / थकीत वर्गणी यादी (Active Pending List)")
+
+
+    pending_records = db.get_all_pending_donations()
+    if pending_records:
+        p_columns = ["नोंद क्र. (ID)", "नाव / संस्था (Name)", "मोबाईल (Phone)", "रक्कम (₹)", "अपेक्षित तारीख (Expected Date)", "तपशील (Notes)", "नोंद तारीख (Created At)"]
+        p_df = pd.DataFrame(pending_records, columns=p_columns)
+        p_df.insert(0, "अनुक्रमांक (Sr. No.)", range(1, len(p_df) + 1))
+        st.dataframe(p_df, use_container_width=True, hide_index=True)
+
+        st.write("---")
+
+        ## Payment received section 
+        st.subheader( " रक्कम जमा झाली? मुख्य यादीत जोडा (Mark as Received)")
+        pending_dict={f"#{row[0]} - {row[1]} (₹{row[3]:,.2f})": row[0] for row in pending_records}
+
+        col_s1, col_s2, col_s3 =st.columns([2,1,1])
+        with col_s1:
+            settle_selection = st.selectbox("जमा झालेली नोंद निवडा:", options=list(pending_dict.keys()))
+        with col_s2:
+            settle_mode = st.selectbox("जमा पद्धत (Mode):", ['Cash', 'UPI', 'Bank Transfer'], key="settle_mode")
+        with col_s3:
+            st.write("")
+            st.write("")
+            settle_btn = st.button("रक्कम जमा करा (Confirm)", type="primary")    
+
+        if settle_btn:
+            target_pending_id=pending_dict[settle_selection]
+            r_id, d_name, d_phone, d_amt = db.settle_pending_donation(target_pending_id, settle_mode)
+            if r_id:
+                st.balloons()
+                st.success(f"रक्कम यशस्वी जमा झाली! मुख्य पावती क्र. #{r_id} तयार झाली.")
+
+                if d_phone and str(d_phone).strip():
+                    final_wa_url =create_whatsapp_url(d_phone, d_name,  r_id ,d_amt ,settle_mode)
+                    st.markdown(
+                        f"""
+                        <a href="{final_wa_url}" target="_blank" style="text-decoration:none;">
+                            <div style="background-color: #25D366; color: white; padding: 12px 20px; text-align: center; border-radius: 8px; font-weight: bold; font-size: 16px; margin-top: 10px; display: inline-block; width: 100%;">
+                                 अधिकृत पावती WhatsApp वर पाठवा (Send Official Receipt)
+                            </div>
+                        </a>
+                        """,
+                        unsafe_allow_html=True
+                    )
+
+
+        with st.expander("थकीत नोंद रद्द करा (Delete Pending Entry)"):
+            del_p_label = st.selectbox("रद्द करण्यासाठी नोंद निवडा:", options=list(pending_dict.keys()), key="del_pending")
+            if st.button("नोंद रद्द करा (Delete)", type="secondary"):
+                del_target_id = pending_dict[del_p_label]
+                db.delete_pending_donation(del_target_id)
+                st.warning(f"नोंद #{del_target_id} रद्द केली गेली!")
+                st.rerun()
+    else:
+        st.info("सध्या कोणतीही थकीत वर्गणी नाही (No pending donations).")
 

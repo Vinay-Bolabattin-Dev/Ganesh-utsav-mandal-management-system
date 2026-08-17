@@ -30,7 +30,20 @@ def init_db():
         )
         """)
 
+        # Pending table 
+        cursor.execute("""
+        CREATE  TABLE IF NOT EXISTS pending_donations(
+        id INTEGER PRIMARY KEY AUTOINCREMENT ,
+        donor_name TEXT NOT NULL,
+        phone_number TEXT ,
+        amount REAL NOT NULL ,
+        promised_date TEXT,
+        notes TEXT ,
+        status TEXT DEFAULT 'Pending',
+        date_added TIMESTAMP DEFAULT CURRENT_TIMESTAMP )
+        """)
         conn.commit()
+
 """-------- DONATIONS SESSION-------"""
 def add_donation(name, phone, amount, payment_mode):
     """Inserts a new donation record and returns receipt ID."""
@@ -112,12 +125,12 @@ def get_financial_summary():
 
 """============= All Pending Donation / list ============ """
 
-def add_pending_table(donor_name, phone_number, amount,promised_date , notes=""):
+def add_pending_donation(donor_name, phone_number, amount,promised_date , notes=""):
     ## Initalizes the pending donations table. 
     with sqlite3.connect(DB_NAME)as conn :
         cursor=conn.cursor()
         cursor.execute(""" 
-        INSERT INTO pending_donations (donor_name , phone_nubmer ,amount , promised_date , notes)
+        INSERT INTO pending_donations (donor_name , phone_number ,amount , promised_date , notes)
         VALUES (?,?,?,?,? ) 
         """, (donor_name, phone_number, amount,promised_date , notes))
         conn.commit()
@@ -128,9 +141,9 @@ def get_all_pending_donations():
     with sqlite3.connect(DB_NAME) as conn:
         cursor=conn.cursor()
         cursor.execute("""
-        SELECT id, donor_name,phone_number, amount, promised_date, notes, data-added
+        SELECT id, donor_name,phone_number, amount, promised_date, notes, date_added
         FROM pending_donations
-        WHERE stastus ='Pending'
+        WHERE status ='Pending'
         ORDER BY id DESC
         """)
         return cursor.fetchall()
@@ -145,10 +158,32 @@ def get_total_pending_amount():
 
 
 
+def settle_pending_donation(pending_id, payment_mode):
+    ## Moves a pending pledge to the confirmed donation table 
+    with sqlite3.connect(DB_NAME) as conn:
+        cursor=conn.cursor()
+        cursor.execute("SELECT donor_name ,phone_number,amount FROM pending_donations WHERE id=?", (pending_id,))
+        records=cursor.fetchone()
 
+        if records:
+            donor_name ,phone ,amount = records
+            cursor.execute("""
+            INSERT INTO donations(donor_name, phone_number,amount,payment_mode)
+            VALUES (?,?,?,?)
+            """, (donor_name,phone ,amount,payment_mode)) 
+            receipt_id=cursor.lastrowid
+            cursor.execute("DELETE FROM pending_donations WHERE id =?" ,(pending_id,))
+            conn.commit()
+            return receipt_id, donor_name ,phone ,amount 
+        return None,None,None, None
 
-
-
+def delete_pending_donation(pending_id):
+    ##Deletes a pending entry by ID.
+    with sqlite3.connect(DB_NAME)as conn:
+        cursor =conn.cursor()
+        cursor.execute("DELETE FROM pending_donations WHERE id=?",(pending_id,))
+        conn.commit()
+        return True
 
 if __name__ == "__main__":
     init_db()
