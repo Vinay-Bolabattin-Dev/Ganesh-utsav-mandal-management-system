@@ -1,11 +1,15 @@
 import streamlit as st
 import pandas as pd
 import database as db
+import os 
 import urllib.parse
 from datetime import date
 
+##-------- Mandal Instagram Configaration (used for WA msg )-------------------------------
+INSTAGRAM_HANDLE= "ss_group__1989"
+INSTAGRAM_URL=f"https://instagram.com/{INSTAGRAM_HANDLE}"
 
-## Whats app url helper  (Confrimed Donations)
+##------------------ Whats app url helper  (Confrimed Donations)----------------------------
 def create_whatsapp_url(phone, name, receipt_no, amount, mode):
     ## Generating whatsapp click-to-chat URL with pre-filled receipt msg
     clean_phone = "".join(filter(str.isdigit, str(phone)))
@@ -20,6 +24,9 @@ def create_whatsapp_url(phone, name, receipt_no, amount, mode):
         f"👤 *देणगीदार (Donor)* : {name}",
         f"💰 *वर्गणी रक्कम (Amount)* : *₹{amount:,.2f}*",
         f"💳 *पद्धत (Payment mode)* : {mode}",
+        "",
+        "📸 * नवनवीन रील्स आणि उत्सवाचे सर्व अपडेट्स पाहण्यासाठी मंडळाच्या Instagram पेजला नक्की फॉलो करा:*",
+        f"👉 {INSTAGRAM_URL}",
         "",
         "🙏 मंडळाच्या वतीने आपले मनापासून आभार!",
         "🌺 *गणपती बाप्पा मोरया, मंगलमूर्ती मोरया!* 🌺"
@@ -51,6 +58,10 @@ def create_pending_whatsapp_url(phone,name,amount,promised_date,notes):
         
     lines.extend([
         "",
+        "",
+        "📸 *नवनवीन रील्स आणि उत्सवाचे सर्व अपडेट्स पाहण्यासाठी मंडळाच्या Instagram पेजला नक्की फॉलो करा:*",
+        f"👉 {INSTAGRAM_URL}",
+        "",
         "🙏 आपल्या सहकार्याबद्दल मनःपूर्वक धन्यवाद!",
         "🌺 *गणपती बाप्पा मोरया, मंगलमूर्ती मोरया!* 🌺"
     ])
@@ -58,8 +69,35 @@ def create_pending_whatsapp_url(phone,name,amount,promised_date,notes):
     encoded_text=urllib.parse.quote(message_text.encode('utf-8'))
     return f"http://api.whatsapp.com/send?phone={clean_phone}&text={encoded_text}"
 
-##Page configuration & financial metrics 
+##Page configuration & financial metrics & Header banner 
+st.set_page_config(page_title="श्री स्वामी समर्थ मित्र मंडळ", page_icon="🚩", layout='wide')
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+ASSETS_DIR = os.path.join(BASE_DIR, "assets")
+
+# Look for any matching image in the assets folder
+possible_images = [
+    os.path.join(ASSETS_DIR, "bappa_main1.jpeg"),
+    os.path.join(ASSETS_DIR, "bappa_main.jpg"),
+    os.path.join(ASSETS_DIR, "bappa_main.jpeg"),
+    os.path.join(ASSETS_DIR, "bappa_main2.jpeg"),
+]
+
+image_path = next((p for p in possible_images if os.path.exists(p)), None)
+
+# Top Header Layout
+header_col1, header_col2 = st.columns([1, 5])
+with header_col1:
+    if image_path:
+        st.image(image_path, width=120)
+    else:
+        st.markdown("<h1 style='font-size: 50px; margin: 0;'>🚩</h1>", unsafe_allow_html=True)
+
+with header_col2:
+    st.title("श्री स्वामी समर्थ मित्र मंडळ")
+    st.markdown("### **सार्वजनिक गणेश उत्सव मंडळ २०२६**")
+
+st.write("")
 st.set_page_config(page_title= "श्री स्वामी समर्थ मित्र मंडळ", layout='wide')
 
 st.title("श्री स्वामी समर्थ मित्र मंडळ ")
