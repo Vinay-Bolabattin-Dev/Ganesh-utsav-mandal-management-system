@@ -75,33 +75,35 @@ st.set_page_config(page_title="श्री स्वामी समर्थ �
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ASSETS_DIR = os.path.join(BASE_DIR, "assets")
 
-# Look for any matching image in the assets folder
-possible_images = [
-    os.path.join(ASSETS_DIR, "bappa_main1.jpeg"),
-    os.path.join(ASSETS_DIR, "bappa_main.jpg"),
-    os.path.join(ASSETS_DIR, "bappa_main.jpeg"),
-    os.path.join(ASSETS_DIR, "bappa_main2.jpeg"),
-]
+## Automatically pick up any single image inside the assets directory 
+found_image=None
+if os.path.exists(ASSETS_DIR):
+    for filename in os.listdir(ASSETS_DIR):
+        if filename.lower().endswith(('.png','.jpg', '.jpeg', '.webp')):
+            found_image=os.path.join(ASSETS_DIR , filename)
+            break
+## full width top banner & title 
 
-image_path = next((p for p in possible_images if os.path.exists(p)), None)
+if found_image and os.path.exists(found_image):
+    st.image(found_image, use_container_width=True)
 
-# Top Header Layout
-header_col1, header_col2 = st.columns([1, 5])
-with header_col1:
-    if image_path:
-        st.image(image_path, width=120)
-    else:
-        st.markdown("<h1 style='font-size: 50px; margin: 0;'>🚩</h1>", unsafe_allow_html=True)
-
-with header_col2:
-    st.title("श्री स्वामी समर्थ मित्र मंडळ")
-    st.markdown("### **सार्वजनिक गणेश उत्सव मंडळ २०२६**")
+## Cretered Festival Header
+st.markdown(
+    """
+    <div style="text-align: center; margin-top: 10px; margin-bottom: 10px;">
+        <h1 style="margin: 0; font-size: 42px; font-weight: bold; color: #FF9933;">
+            🚩 श्री स्वामी समर्थ मित्र मंडळ 🚩
+        </h1>
+        <p style="margin-top: 5px; font-size: 20px; color: #CCCCCC; font-weight: 500;">
+            सार्वजनिक गणेशोत्सव मंडळ २०२६
+        </p>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 st.write("")
-st.set_page_config(page_title= "श्री स्वामी समर्थ मित्र मंडळ", layout='wide')
 
-st.title("श्री स्वामी समर्थ मित्र मंडळ ")
-st.write("सार्वजनिक गणेश उत्सव मंडळ")
 
 total_coll , total_exp , balance = db.get_financial_summary() ## calling function from database.py
 total_pending=db.get_total_pending_amount()
