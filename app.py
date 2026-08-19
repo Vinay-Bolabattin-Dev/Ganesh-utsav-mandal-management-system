@@ -16,13 +16,15 @@ def create_whatsapp_url(phone, name, receipt_no, amount, mode):
     if len(clean_phone) == 10:
         clean_phone = "91" + clean_phone 
 
+    formatted_amount=f"₹{int(amount):,}" if float(amount).is_integer() else f"₹{amount:,.2f}"
+
     lines = [
         "🚩 *श्री स्वामी समर्थ मित्र मंडळ* 🚩",
         "*सार्वजनिक गणेशोत्सव २०२६*",
         "",
         f"📄 *पावती क्र.(Receipt no)* : #{receipt_no}",
-        f"👤 *देणगीदार (Donor)* : {name}",
-        f"💰 *वर्गणी रक्कम (Amount)* : *₹{amount:,.2f}*",
+        f"👤 *देणगीदार (Donor)* : *{name}*",
+        f"💰 *वर्गणी रक्कम (Amount)* : *{formatted_amount}*",
         f"💳 *पद्धत (Payment mode)* : {mode}",
         "",
         "📸 * नवनवीन रील्स आणि उत्सवाचे सर्व अपडेट्स पाहण्यासाठी मंडळाच्या Instagram पेजला नक्की फॉलो करा:*",
@@ -43,13 +45,15 @@ def create_pending_whatsapp_url(phone,name,amount,promised_date,notes):
     if len(clean_phone)==10:
         clean_phone="91"+ clean_phone
 
+    formatted_amount=f"₹{int(amount):,}" if float(amount).is_integer() else f"₹{amount:,.2f}"
+
     lines = [
         "🚩 *श्री स्वामी समर्थ मित्र मंडळ* 🚩",
         "*सार्वजनिक गणेशोत्सव २०२६*",
         "",
         "📋 *अंदाजित / थकीत वर्गणी नोंद (Pending Donations)*",
         f"👤 *नाव / संस्था(Donor name)* : {name}",
-        f"💰 *नोंदवलेली रक्कम(Amount)* : *₹{amount:,.2f}*",
+        f"💰 *नोंदवलेली रक्कम(Amount)* : *{formatted_amount}*",
         f"🗓️ *अपेक्षित तारीख(Promised date)* : {promised_date}",
     ]
 
@@ -69,9 +73,84 @@ def create_pending_whatsapp_url(phone,name,amount,promised_date,notes):
     encoded_text=urllib.parse.quote(message_text.encode('utf-8'))
     return f"http://api.whatsapp.com/send?phone={clean_phone}&text={encoded_text}"
 
+
+
+
 ##Page configuration & financial metrics & Header banner 
 st.set_page_config(page_title="श्री स्वामी समर्थ मित्र मंडळ", page_icon="🚩", layout='wide')
+##============ CSS Styling =============================================================
+st.markdown(
+    """
+    <style>
+    /* Metric Cards - Glowing Festive Gradient */
+    div[data-testid="stMetric"] {
+        background: linear-gradient(135deg, rgba(255, 153, 51, 0.08) 0%, rgba(20, 20, 20, 0.6) 100%);
+        border: 1px solid rgba(255, 153, 51, 0.35);
+        border-radius: 12px;
+        padding: 16px 20px;
+        box-shadow: 0 4px 15px rgba(255, 153, 51, 0.12);
+        transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    div[data-testid="stMetric"]:hover {
+        transform: translateY(-3px);
+        border-color: #FF9933;
+        box-shadow: 0 6px 20px rgba(255, 153, 51, 0.25);
+    }
+    div[data-testid="stMetricLabel"] {
+        color: #E0E0E0 !important;
+        font-weight: 600;
+        font-size: 14px;
+    }
+    div[data-testid="stMetricValue"] {
+        color: #FFB347 !important;
+        font-weight: bold;
+    }
 
+    /* Tab Headers - Saffron Accent */
+    button[data-baseweb="tab"] {
+        font-size: 15px !important;
+        font-weight: 600 !important;
+        padding: 10px 20px !important;
+        border-radius: 8px 8px 0 0 !important;
+        transition: all 0.2s ease-in-out;
+    }
+    button[data-baseweb="tab"][aria-selected="true"] {
+        color: #FF9933 !important;
+        border-bottom-color: #FF9933 !important;
+    }
+
+    /* Form Buttons - Rich Golden Saffron Gradient */
+    div.stButton > button[kind="primary"], div.stButton > button {
+        background: linear-gradient(45deg, #FF6600 0%, #FF9933 100%) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 8px !important;
+        font-weight: bold !important;
+        font-size: 15px !important;
+        padding: 10px 24px !important;
+        box-shadow: 0 4px 12px rgba(255, 102, 0, 0.3) !important;
+        transition: all 0.2s ease !important;
+    }
+    div.stButton > button:hover {
+        transform: scale(1.02);
+        box-shadow: 0 6px 18px rgba(255, 102, 0, 0.5) !important;
+    }
+
+    /* Form Containers */
+    div[data-testid="stForm"] {
+        border: 1px solid rgba(255, 153, 51, 0.2);
+        border-radius: 12px;
+        padding: 20px;
+        background: rgba(255, 255, 255, 0.02);
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+
+
+##======================================================================================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ASSETS_DIR = os.path.join(BASE_DIR, "assets")
 
@@ -90,20 +169,29 @@ if found_image and os.path.exists(found_image):
 ## Cretered Festival Header
 st.markdown(
     """
-    <div style="text-align: center; margin-top: 10px; margin-bottom: 10px;">
-        <h1 style="margin: 0; font-size: 42px; font-weight: bold; color: #FF9933;">
+    <div style="
+        background: linear-gradient(135deg, rgba(255, 153, 51, 0.12) 0%, rgba(25, 25, 25, 0.7) 100%);
+        border: 1px solid rgba(255, 153, 51, 0.4);
+        border-radius: 14px;
+        padding: 16px 20px;
+        text-align: center;
+        margin-top: 14px;
+        margin-bottom: 22px;
+        box-shadow: 0 4px 20px rgba(255, 153, 51, 0.18);
+    ">
+        <p style="margin: 0; font-size: 15px; color: #FFD700; font-weight: 600; letter-spacing: 1px;">
+            ॥ श्री गणेशाय नमः ॥
+        </p>
+        <h1 style="margin: 4px 0; font-size: 38px; font-weight: 800; color: #FF9933; text-shadow: 0 2px 10px rgba(255, 153, 51, 0.3);">
             🚩 श्री स्वामी समर्थ मित्र मंडळ 🚩
         </h1>
-        <p style="margin-top: 5px; font-size: 20px; color: #CCCCCC; font-weight: 500;">
-            सार्वजनिक गणेशोत्सव मंडळ २०२६
+        <p style="margin: 0; font-size: 18px; color: #E0E0E0; font-weight: 500;">
+            सार्वजनिक गणेशोत्सव २०२६ | सोलापूर
         </p>
     </div>
     """,
     unsafe_allow_html=True
 )
-
-st.write("")
-
 
 total_coll , total_exp , balance = db.get_financial_summary() ## calling function from database.py
 total_pending=db.get_total_pending_amount()
