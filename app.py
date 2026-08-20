@@ -5,6 +5,45 @@ import os
 import urllib.parse
 from datetime import date
 
+##"""" Authentication Gate (PIN  Protection) """
+def  check_password():
+    """" Return True if user enters the correct PIN """
+
+
+    if not st.session_state.get("authenticated", False ):
+        login_col1,login_col2,login_col3=st.columns([1,2,1])
+        with login_col2:
+            st.markdown(
+              """
+                <div style="text-align: center; margin-top: 50px; margin-bottom: 20px;">
+                    <h2 style="color: #FF9933; margin-bottom: 5px;">🚩 श्री स्वामी समर्थ मित्र मंडळ</h2>
+                    <p style="color: #CCCCCC; font-size: 15px;">सार्वजनिक गणेशोत्सव २०२६ | अधिकृत प्रवेश</p>
+                </div>
+                """, 
+                unsafe_allow_html=True 
+            )
+            with st.form("login_form "):
+                pin_input=st.text_input("🔑 सिक्रेट पिन / पासवर्ड टाका (Enter PIN)", placeholder= "Enter PIN ")
+                login_btn=st.form_submit_button("लॉगिन (Unlock Dashboard)", use_container_width=True)
+
+        if login_btn:
+                    # Safely check Streamlit secrets, fall back to "1989" if secrets file doesn't exist
+                    try:
+                        correct_pin = st.secrets.get("APP_PASSWORD", "1989")
+                    except Exception:
+                        correct_pin = "1989"
+
+                    if pin_input == correct_pin:
+                        st.session_state["authenticated"] = True
+                        st.rerun()
+                    else:
+                        st.error("❌ चुकीचा पासवर्ड! कृपया योग्य पिन टाका. (Incorrect PIN)")
+        return False
+
+    return True
+
+
+
 ##-------- Mandal Instagram Configaration (used for WA msg )-------------------------------
 INSTAGRAM_HANDLE= "ss_group__1989"
 INSTAGRAM_URL=f"https://instagram.com/{INSTAGRAM_HANDLE}"
@@ -147,6 +186,9 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
+if not check_password():
+    st.stop()
 
 
 
