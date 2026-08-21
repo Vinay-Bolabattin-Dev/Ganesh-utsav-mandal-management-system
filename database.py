@@ -43,6 +43,7 @@ def init_db():
         date_added TIMESTAMP DEFAULT CURRENT_TIMESTAMP )
         """)
         conn.commit()
+    init_dono_master()
 
 """-------- DONATIONS SESSION-------"""
 def add_donation(name, phone, amount, payment_mode):
@@ -185,6 +186,61 @@ def delete_pending_donation(pending_id):
         conn.commit()
         return True
 
+
+##============ Previous year Donor List =======
+def init_dono_master():
+    ## initialises the previous year master donors table 
+    with sqlite3.connect(DB_NAME) as conn:
+        cursor=conn.cursor()
+        cursor.execute(""" CREATE TABLE IF NOT EXISTS previous_donors (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        donor_name TEXT NOT NULL,
+        phone_number TEXT DEFAULT '' ,
+        last_year_amount REAL  DEFAULT 0.0
+        )
+        """)
+        conn.commit()
+
+
+def add_master_donor_bulk(donor_tuples):
+    with sqlite3.connect(DB_NAME) as conn:
+        """ Inserts multiple master donor records at once.
+        donor_tuples format [ ('Donor_name' , ' phone or blank ', amount), ....]"""
+
+        cursor=conn.cursor()
+        cursor.executemany(""" 
+        INSERT INTO previous_donors(donor_name , phone_number , last_year_amount) VALUES(?,?,?)
+        """, donor_tuples)
+        conn.commit()
+        return True 
+
+def get_all_master_donor():
+    ## Fetchas all previous year donor records alphabetically.
+    with sqlite3.connect(DB_NAME) as conn:
+        cursor=conn.cursor()
+        cursor.execute(""" 
+        SELECT id , donor_name, phone_number , last_year_amount
+        FROM  previous_donors
+        ORDER BY donor_name ASC 
+        """)
+        return cursor.fetchall()
+
+
+def search_master_donors(query_text):
+    with sqlite3.connect(DB_NAME) as conn:
+        cursor=conn.cursor()
+        cursor.execute(""" 
+        SELECT id , donor_name ,phone_number, last_year_amount
+        FROM previous_donors 
+        WHERE donor_name LIKE ?
+        ORDER BY donor_name ASC  
+        """ , (f"%{query_text.strip()}%", ))
+        return cursor.fetchall()
+
 if __name__ == "__main__":
     init_db()
     print("Ganesh Mandal Database Initialized successfully!")
+
+
+
+

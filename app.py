@@ -2,6 +2,14 @@ import streamlit as st
 import pandas as pd
 import database as db
 import os 
+from database import (
+    init_db, add_donation, get_all_donations, delete_donor_record,
+    add_expense, get_all_expenses, delete_expense,
+    get_financial_summary,
+    add_pending_donation, get_all_pending_donations,
+    get_total_pending_amount, settle_pending_donation, delete_pending_donation,
+    get_all_master_donor, search_master_donors
+)
 import urllib.parse
 from datetime import date
 
@@ -246,47 +254,103 @@ col4.metric(label="येणे बाकी (Total Pending)", value=f"₹{total
 st.write("----")
 
 #navigation tables 
-tab1, tab2, tab3, tab4 = st.tabs([
+tab1, tab2, tab3, tab4 ,tab5= st.tabs([
     "वर्गणी पावती (Collect Vargani)",
     "सर्व नोंदी (All Records)",
     "खर्च नोंद (Expenses)",
-    "थकीत / अंदाजित वर्गणी (Pending Donations)"
+    "थकीत / अंदाजित वर्गणी (Pending Donations)",
+    "मागील वर्ष देणगीदार (Master List)"
 ])
 
 ## tab1 : New Donations receipet
 
-with tab1: ## receipt table 
+## tab1 : New Donations receipet
+## =================== TAB 1 : New Donation Receipt ===================
+with tab1:
     st.subheader("नवीन वर्गणी पावती फाडा (New Donation Receipt)")
 
-    with st.form("donation_form" ,clear_on_submit=True):
-        donor_name=st.text_input("भक्ताचे / देणगीदाराचे नाव (Donor Name) *")
-        phone_number=st.text_input("मोबाईल नंबर (Phone Number)")
-        amount=st.number_input("वर्गणी रक्कम (Amount in ₹) *", min_value=0.0,step=50.0)
-        payment_mode=st.selectbox("पैसे देण्याची पद्धत (Payment Mode)",['Cash', 'UPI', 'Bank Transfer'])
+    # 1. State initialization for auto-filling
+    if "selected_donor_name" not in st.session_state:
+        st.session_state["selected_donor_name"] = ""
+    if "selected_donor_phone" not in st.session_state:
+        st.session_state["selected_donor_phone"] = ""
+    if "selected_donor_amount" not in st.session_state:
+        st.session_state["selected_donor_amount"] = 101.0
 
+    # 2. Live Search Box (Outside Form)
+    search_query = st.text_input(
+        "🔍 देणगीदार शोधा / Search Previous Donor (Type Marathi or English e.g. 'Dasari', 'Ram', 'हॉटेल')",
+        placeholder="Type name here...",
+        key="donor_search_input"
+    )
 
-        submitted= st.form_submit_button("पावती तयार करा (Generate Receipt)")
+    all_masters = db.get_all_master_donor()
 
+    if search_query.strip():
+        q = search_query.strip().lower()
+        # Match against Marathi name, English name, or phone
+        matches = [d for d in all_masters if q in d[1].lower() or (d[2] and q in str(d[2]))]
+
+        if matches:
+            st.markdown(f"**जुळणारी नावे ({len(matches)} आढळले):**")
+            cols = st.columns(min(len(matches), 3))
+            for idx, match in enumerate(matches[:6]):  # Display top matches as quick select chips
+                clean_name = match[1].split(" | ")[0].strip() if " | " in match[1] else match[1]
+                prev_amt = int(match[3]) if match[3] else 0
+                col_idx = idx % min(len(matches), 3)
+                
+                with cols[col_idx]:
+                    if st.button(f"👤 {clean_name} (मागील: ₹{prev_amt})", key=f"match_btn_{match[0]}"):
+                        st.session_state["selected_donor_name"] = clean_name
+                        st.session_state["selected_donor_phone"] = match[2] if match[2] else ""
+                        st.session_state["selected_donor_amount"] = float(match[3]) if match[3] and match[3] > 0 else 101.0
+                        st.rerun()
+        else:
+            st.caption("कोणतेही जुळणारे नाव आढळले नाही (No matching donor found. Enter manually below).")
+
+    st.write("---")
+
+    # 3. Form for Confirmed Receipt Entry
+    with st.form("confirmed_receipt_form", clear_on_submit=False):
+        donor_name = st.text_input(
+            "भक्ताचे / देणगीदाराचे नाव (Donor Name) *",
+            value=st.session_state.get("selected_donor_name", "")
+        )
+        phone_number = st.text_input(
+            "मोबाईल नंबर (Phone Number)",
+            value=st.session_state.get("selected_donor_phone", "")
+        )
+        amount = st.number_input(
+            "वर्गणी रक्कम (Amount in ₹) *",
+            min_value=1.0,
+            value=float(st.session_state.get("selected_donor_amount", 101.0)),
+            step=50.0
+        )
+        payment_mode = st.selectbox("पैसे देण्याची पद्धत (Payment Mode)", ['Cash', 'UPI', 'Bank Transfer'])
+
+        submitted = st.form_submit_button("🚩 पावती तयार करा (Generate Receipt)", type="primary")
 
         if submitted:
             if donor_name.strip():
-                # Call database function to save record
-                receipt_id = db.add_donation(donor_name, phone_number, amount, payment_mode)
+                receipt_id = db.add_donation(donor_name.strip(), phone_number.strip(), amount, payment_mode)
                 st.balloons()
-                st.success(f" वर्गणी यशस्वीरीत्या जमा झाली! पावती क्रमांक: #{receipt_id}")
-                st.info(f"देणगीदार: {donor_name} | रक्कम: ₹{amount:,.2f} | पद्धत: {payment_mode}")
+                st.success(f"✅ वर्गणी यशस्वीरीत्या जमा झाली! पावती क्रमांक: #{receipt_id}")
+                st.info(f"देणगीदार: {donor_name.strip()} | रक्कम: ₹{amount:,.2f} | पद्धत: {payment_mode}")
+
+                # Reset selected state after successful submission
+                st.session_state["selected_donor_name"] = ""
+                st.session_state["selected_donor_phone"] = ""
+                st.session_state["selected_donor_amount"] = 101.0
 
                 if phone_number.strip():
-                    wa_url = create_whatsapp_url(phone_number, donor_name, receipt_id, amount, payment_mode)
-                    
-                    # Clean direct HTML button that prevents browser double-encoding
+                    wa_url = create_whatsapp_url(phone_number.strip(), donor_name.strip(), receipt_id, amount, payment_mode)
                     st.markdown(
                         f"""
                         <a href="{wa_url}" target="_blank" style="text-decoration:none;">
                             <div style="
                                 background-color: #25D366;
                                 color: white;
-                                padding: 10px 20px;
+                                padding: 12px 20px;
                                 text-align: center;
                                 border-radius: 8px;
                                 font-weight: bold;
@@ -295,16 +359,14 @@ with tab1: ## receipt table
                                 display: inline-block;
                                 width: 100%;
                             ">
-                                WhatsApp वर पावती पाठवा (Send Receipt on WhatsApp)
+                                📲 WhatsApp वर पावती पाठवा (Send Receipt on WhatsApp)
                             </div>
                         </a>
                         """,
                         unsafe_allow_html=True
                     )
-
             else:
-                st.error("कृपया देणगीदाराचे नाव टाका (Please enter donor name)!")
-
+                st.error("❌ कृपया देणगीदाराचे नाव टाका (Please enter donor name)!")
 ## tab2 : Confrimed Donor Records 
 with tab2: ## donors list table 
     st.subheader("जमा वर्गणी यादी (All Donation Records)")
@@ -481,3 +543,11 @@ with tab4 :
     else:
         st.info("सध्या कोणतीही थकीत वर्गणी नाही (No pending donations).")
 
+
+with tab5:
+    st.subheader("📋 मागील वर्षाची देणगीदार यादी (Previous Year Master List)")
+    master_records = db.get_all_master_donor()
+    if master_records:
+        m_df = pd.DataFrame(master_records, columns=["आयडी (ID)", "नाव (Donor Name)", "मोबाईल (Phone)", "रक्कम (Last Year ₹)"])
+        m_df.insert(0, "अनुक्रमांक (Sr. No.)", range(1, len(m_df) + 1))
+        st.dataframe(m_df, use_container_width=True, hide_index=True)
