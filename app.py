@@ -62,15 +62,15 @@ def create_whatsapp_url(phone, name, receipt_no, amount, mode):
         "*सार्वजनिक गणेशोत्सव २०२६*",
         "",
         f"📄 *पावती क्र.(Receipt no)* : #{receipt_no}",
-        f"👤 *देणगीदार (Donor)* : *{name}*",
+        f"👤 *देणगीदार (Donor)* : *_{name}_*",
         f"💰 *वर्गणी रक्कम (Amount)* : *{formatted_amount}*",
         f"💳 *पद्धत (Payment mode)* : {mode}",
         "",
-        "📸 * नवनवीन रील्स आणि उत्सवाचे सर्व अपडेट्स पाहण्यासाठी मंडळाच्या Instagram पेजला नक्की फॉलो करा:*",
+        "📸 *नवनवीन रील्स आणि उत्सवाचे सर्व अपडेट्स पाहण्यासाठी मंडळाच्या Instagram पेजला नक्की फॉलो करा:*",
         f"👉 {INSTAGRAM_URL}",
         "",
-        "🙏 मंडळाच्या वतीने आपले मनापासून आभार!",
-        "🌺 *गणपती बाप्पा मोरया, मंगलमूर्ती मोरया!* 🌺"
+        "🙏 *_मंडळाच्या वतीने आपले मनापासून आभार!_*",
+        "🌺 *_गणपती बाप्पा मोरया, मंगलमूर्ती मोरया!_* 🌺"
     ]
     message_text = '\n'.join(lines)
     encoded_text = urllib.parse.quote(message_text.encode('utf-8'))
@@ -91,7 +91,7 @@ def create_pending_whatsapp_url(phone,name,amount,promised_date,notes):
         "*सार्वजनिक गणेशोत्सव २०२६*",
         "",
         "📋 *अंदाजित / थकीत वर्गणी नोंद (Pending Donations)*",
-        f"👤 *नाव / संस्था(Donor name)* : {name}",
+        f"👤 *नाव / संस्था(Donor name)* : *_{name}_*",
         f"💰 *नोंदवलेली रक्कम(Amount)* : *{formatted_amount}*",
         f"🗓️ *अपेक्षित तारीख(Promised date)* : {promised_date}",
     ]
