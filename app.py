@@ -551,3 +551,6 @@ with tab5:
         m_df = pd.DataFrame(master_records, columns=["आयडी (ID)", "नाव (Donor Name)", "मोबाईल (Phone)", "रक्कम (Last Year ₹)"])
         m_df.insert(0, "अनुक्रमांक (Sr. No.)", range(1, len(m_df) + 1))
         st.dataframe(m_df, use_container_width=True, hide_index=True)
+
+
+

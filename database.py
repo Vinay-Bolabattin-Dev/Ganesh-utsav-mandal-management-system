@@ -45,15 +45,6 @@ def init_db():
         conn.commit()
 
 
-    with sqlite3.connect(DB_NAME) as conn:
-        cursor=conn.cursor()
-        cursor.execute("DELETE FROM donations ")
-        cursor.execute("DELETE FROM expenses ")
-        cursor.execute("DELETE FROM pending_donations")
-        cursor.execute("DELETE FROM sqlite_sequence WHERE name IN('donations', 'pending_donations', 'expenses')")
-        conn.commit()
-        
-    init_dono_master()
 
 
 
