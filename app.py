@@ -125,6 +125,10 @@ def create_pending_whatsapp_url(phone,name,amount,promised_date,notes):
 
 ##Page configuration & financial metrics & Header banner 
 st.set_page_config(page_title="श्री स्वामी समर्थ मित्र मंडळ", page_icon="🚩", layout='wide')
+
+
+db.init_db()
+db.init_dono_master()
 ##============ CSS Styling =============================================================
 st.markdown(
     """
@@ -550,7 +554,6 @@ with tab5:
     if master_records:
         m_df = pd.DataFrame(master_records, columns=["आयडी (ID)", "नाव (Donor Name)", "मोबाईल (Phone)", "रक्कम (Last Year ₹)"])
         m_df.insert(0, "अनुक्रमांक (Sr. No.)", range(1, len(m_df) + 1))
-        st.dataframe(m_df, use_container_width=True, hide_index=True)
-
-
-
+        st.dataframe(m_df, width="stretch", hide_index=True)
+    else:
+        st.info("मागील वर्षाची कोणतीही नोंद आढळली नाही. (Master list is empty).")
