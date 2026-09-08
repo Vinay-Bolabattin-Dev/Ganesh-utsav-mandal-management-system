@@ -18,8 +18,9 @@ def _read_sheet(worksheet_name):
         return pd.DataFrame()
 
 def _update_sheet(worksheet_name, df):
-    """Overwrites the worksheet with updated DataFrame data."""
+    """Overwrites the worksheet with updated data and clears read cache."""
     conn.update(worksheet=worksheet_name, data=df)
+    st.cache_data.clear()
 
 def init_db():
     """No-op for compatibility with app.py startup calls."""
