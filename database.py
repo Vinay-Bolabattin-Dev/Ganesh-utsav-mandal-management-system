@@ -7,11 +7,14 @@ from datetime import datetime
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 def _read_sheet(worksheet_name):
-    """Safely reads a worksheet, drops empty rows, and returns a DataFrame."""
+    """Safely reads a worksheet, drops empty rows, and surfaces errors."""
     try:
-        df = conn.read(worksheet=worksheet_name, ttl=0)
-        return df.dropna(how="all")
-    except Exception:
+        df = conn.read(worksheet=worksheet_name, ttl="1s")
+        if df is not None and not df.empty:
+            return df.dropna(how="all")
+        return pd.DataFrame()
+    except Exception as e:
+        st.error(f"Error reading tab '{worksheet_name}': {e}")
         return pd.DataFrame()
 
 def _update_sheet(worksheet_name, df):
