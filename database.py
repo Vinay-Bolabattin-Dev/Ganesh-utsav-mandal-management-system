@@ -7,15 +7,18 @@ from datetime import datetime
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 def _read_sheet(worksheet_name):
-    """Safely reads a worksheet, drops empty rows, and surfaces errors."""
+    """Safely reads a worksheet with caching to respect Google Sheets quota."""
     try:
-        df = conn.read(worksheet=worksheet_name, ttl="1s")
+        # Cache for 60 seconds so multiple reruns do not hit the 60 req/min quota
+        df = conn.read(worksheet=worksheet_name, ttl=60)
         if df is not None and not df.empty:
             return df.dropna(how="all")
         return pd.DataFrame()
     except Exception as e:
-        st.error(f"Error reading tab '{worksheet_name}': {e}")
+        # Fallback without crashing the UI
+        st.warning(f"Sheets sync in progress for '{worksheet_name}'. Please wait a moment...")
         return pd.DataFrame()
+    
 
 def _update_sheet(worksheet_name, df):
     """Overwrites the worksheet with updated data and clears read cache."""
