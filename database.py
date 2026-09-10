@@ -153,10 +153,15 @@ def get_all_pending_donations():
     if df.empty:
         return []
     
-    # Harmonize headers (handles 'note' vs 'notes', 'expected_amount' vs 'amount')
-    status_col = _get_col_value(df, ["status"], "Pending")
-    is_pending = status_col.astype(str).str.strip().str.lower() == "pending"
-    filtered_df = df[is_pending] if not filtered_df.empty else df
+    # Check status safely
+    if "status" in df.columns:
+        is_pending = df["status"].astype(str).str.strip().str.lower() == "pending"
+        filtered_df = df[is_pending]
+    else:
+        filtered_df = df
+
+    if filtered_df.empty:
+        return []
 
     col_map = {
         "id": _get_col_value(filtered_df, ["id"], ""),
@@ -168,8 +173,9 @@ def get_all_pending_donations():
         "date_added": _get_col_value(filtered_df, ["date_added", "date"], "")
     }
     clean_df = pd.DataFrame(col_map)
+    clean_df["id"] = pd.to_numeric(clean_df["id"], errors="coerce").fillna(0)
     clean_df = clean_df.sort_values(by="id", ascending=False)
-    return clean_df[["id", "donor_name", "phone_number", "amount", "promised_date", "notes", "date_added"]].values.tolist()
+    return clean_df[["id", "donor_name", "phone_number", "amount", "promised_date", "notes", "date_added"]].fillna("").values.tolist()
 
 def get_total_pending_amount():
     df = _read_sheet("pending_donations")
@@ -225,6 +231,7 @@ def get_all_master_donor():
         "last_year_amount": _get_col_value(df, ["last_year_amount", "amount", "last_year"], 0)
     }
     clean_df = pd.DataFrame(col_map)
+    clean_df["donor_name"] = clean_df["donor_name"].astype(str)
     clean_df = clean_df.sort_values(by="donor_name", ascending=True)
     return clean_df[["id", "donor_name", "phone_number", "last_year_amount"]].fillna("").values.tolist()
 
