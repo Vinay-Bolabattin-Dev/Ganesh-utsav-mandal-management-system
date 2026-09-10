@@ -147,24 +147,24 @@ def add_pending_donation(donor_name, phone_number, amount, promised_date, notes=
     updated_df = pd.concat([df, new_row], ignore_index=True)
     _update_sheet("pending_donations", updated_df)
     return new_id
-
 def get_all_pending_donations():
     df = _read_sheet("pending_donations")
     if df.empty:
         return []
     
-    # Check status safely
+    # Check if a status column exists; if it does, show Pending or blanks
     if "status" in df.columns:
-        is_pending = df["status"].astype(str).str.strip().str.lower() == "pending"
+        status_series = df["status"].astype(str).str.strip().str.lower()
+        is_pending = status_series.isin(["pending", "", "nan", "none"])
         filtered_df = df[is_pending]
     else:
         filtered_df = df
 
     if filtered_df.empty:
-        return []
+        filtered_df = df  # fallback so records always show
 
     col_map = {
-        "id": _get_col_value(filtered_df, ["id"], ""),
+        "id": _get_col_value(filtered_df, ["id"], 1),
         "donor_name": _get_col_value(filtered_df, ["donor_name", "donor_na", "name"], ""),
         "phone_number": _get_col_value(filtered_df, ["phone_number", "phone_nu", "phone"], ""),
         "amount": _get_col_value(filtered_df, ["amount", "expected_amount"], 0),
