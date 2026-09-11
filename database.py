@@ -287,3 +287,6 @@ def search_master_donors(query_text):
         return all_donors
     q = str(query_text).strip().lower()
     return [d for d in all_donors if q in str(d[1]).lower() or q in str(d[2])]
+
+
+    
